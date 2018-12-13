@@ -11,7 +11,6 @@ public class ServerNit extends Thread {
 	Socket soketZaKom=null;
 	Korisnik korisnik=new Korisnik();
 	ServerNit[] klijenti;
-	
 	public ServerNit(Socket soket, ServerNit[] klijent, Korisnik korisnik){
 		this.soketZaKom = soket;
 		this.klijenti=klijent;
@@ -27,6 +26,10 @@ public class ServerNit extends Thread {
 				if (linija.equals("b")) {
 					izlazniTokKaKlijentu.println("*** Zatvara se konekcija za Vas ***");
 					soketZaKom.close();
+					break;
+				}
+				if (linija.equals("e")) {
+					prikaziListu();
 					break;
 				}
 				for (int i = 0; i <=9; i++){
@@ -90,6 +93,7 @@ public class ServerNit extends Thread {
 							}
 						}
 						klijenti[i].izlazniTokKaKlijentu.println("Rezultat: "+rez);
+						klijenti[i].korisnik.getKalkulacije().add(linija +" ="+rez);
 					}
 				}
 			} catch (IOException e1) {
@@ -272,7 +276,11 @@ public class ServerNit extends Thread {
 		return false;
 	}
 
-	
+	public void prikaziListu() {
+		for (int j = 0; j <=9; j++)
+			if(klijenti[j]==this)
+				izlazniTokKaKlijentu.println(klijenti[j].korisnik.getKalkulacije());
+	}
 	
 	public void run(){
 		String opcija;
@@ -295,7 +303,7 @@ public class ServerNit extends Thread {
 				break;
 			case "c":
 				registracija();
-				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nd - prijava");
+				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nd - prijava\n e - prikazi listu kalkulacija");
 				switch (ulazniTokOdKlijenta.readLine()) {
 				case "a":
 					izracunaj();
@@ -317,6 +325,9 @@ public class ServerNit extends Thread {
 						System.out.println("Nepoznata opcija.");
 						break;
 					}
+					break;
+				case "e":
+					prikaziListu();
 					break;
 				default:
 					System.out.println("Nepoznata opcija.");

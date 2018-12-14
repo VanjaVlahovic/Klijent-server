@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.LinkedList;
 
 public class ServerNit extends Thread {
 	
@@ -10,7 +11,10 @@ public class ServerNit extends Thread {
 	PrintStream izlazniTokKaKlijentu = null;
 	Socket soketZaKom=null;
 	Korisnik korisnik=new Korisnik();
+	LinkedList<String > imena = new LinkedList<>();
+	LinkedList<Korisnik> listaRegistrovanihKorisnika= new LinkedList<>();
 	ServerNit[] klijenti;
+	
 	public ServerNit(Socket soket, ServerNit[] klijent, Korisnik korisnik){
 		this.soketZaKom = soket;
 		this.klijenti=klijent;
@@ -19,19 +23,21 @@ public class ServerNit extends Thread {
 	
 	public void izracunaj() {
 		String linija;
-		izlazniTokKaKlijentu.println("Unesite zeljeni izraz: \n[Za prekid komunikacije mozete pritisnuti b] ");
+		izlazniTokKaKlijentu.println("Unesite zeljeni izraz: \n[Za prekid komunikacije mozete pritisnuti b\n za prikaz liste e] ");
 		while(true){
 			try {
 				linija=ulazniTokOdKlijenta.readLine();
+				if (linija.equals("e")) {
+					prikaziListu();
+					izlazniTokKaKlijentu.println("Unesite zeljeni izraz: \n[Za prekid komunikacije mozete pritisnuti b\n za prikaz liste e] ");
+					linija=ulazniTokOdKlijenta.readLine();
+				}
 				if (linija.equals("b")) {
 					izlazniTokKaKlijentu.println("*** Zatvara se konekcija za Vas ***");
 					soketZaKom.close();
 					break;
 				}
-				if (linija.equals("e")) {
-					prikaziListu();
-					break;
-				}
+				
 				for (int i = 0; i <=9; i++){
 					if (klijenti[i]!=null && klijenti[i]==this){
 						String rez="nepoznat, mozda je greska u pisanju izraza.";
@@ -212,12 +218,8 @@ public class ServerNit extends Thread {
 		izlazniTokKaKlijentu.println("Unesite jedinstveno korisnicko ime.");
 		try {
 			ime=ulazniTokOdKlijenta.readLine();
-			boolean postoji=false;
-			for (int i = 0; i <=9; i++) {
-				if(klijenti[i]!=null && klijenti[i].korisnik!=null && klijenti[i].korisnik.getIme()!=null && klijenti[i].korisnik.getIme().equals(ime))
-					postoji=true;
-			}
-			if (!postoji)
+			
+			if (!imena.contains(ime))
 				for (int j = 0; j <=9; j++)
 					if (klijenti[j]==this) {
 						klijenti[j].korisnik.setIme(ime);
@@ -225,9 +227,13 @@ public class ServerNit extends Thread {
 			izlazniTokKaKlijentu.println("Unesite sifru. \n[Sifra mora imati minimum 8 karaktera, minimum jedno veliko slovo (A-Z) i minimum jednu cifru (0-9)]");
 			sifra=ulazniTokOdKlijenta.readLine();
 			for (int j = 0; j <=9; j++)
-				if (klijenti[j]==this)
+				if (klijenti[j]==this) {
 					klijenti[j].korisnik.setSifra(sifra);
+					listaRegistrovanihKorisnika.add(klijenti[j].korisnik);
+				}
 			izlazniTokKaKlijentu.println("Uspesno ste se registrovali.");
+			imena.add(ime);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -235,35 +241,37 @@ public class ServerNit extends Thread {
 		
 	}
 	
-	public void prijava() {
+	public boolean prijava() {
 		String ime;
 		String sifra;
 		izlazniTokKaKlijentu.println("Unesite korisnicko ime");
 		try {
 			ime=ulazniTokOdKlijenta.readLine();
-			for (int i = 0; i <=9; i++) {
-				if(klijenti[i]!=null && klijenti[i].korisnik!=null && klijenti[i].korisnik.getIme()!=null && klijenti[i].korisnik.getIme().equals(ime)) {
-					izlazniTokKaKlijentu.println("Unesite sifru.");
-					sifra=ulazniTokOdKlijenta.readLine();
-					if (klijenti[i].korisnik.getSifra().equals(sifra)) {
+			if(imena.contains(ime)) {
+				izlazniTokKaKlijentu.println("Unesite sifru.");
+				sifra=ulazniTokOdKlijenta.readLine();
+				int brojKorisnika=listaRegistrovanihKorisnika.size();
+				for(int i=0; i<brojKorisnika; i++) {
+					if(listaRegistrovanihKorisnika.get(i).getIme().equals(ime) &&
+							listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra)) {
 						for (int j = 0; j <=9; j++)
 							if(klijenti[j]==this) {
-								klijenti[j]=klijenti[i];
-								klijenti[i]=null;
-								
+								klijenti[j].korisnik=listaRegistrovanihKorisnika.get(i);	
+								izlazniTokKaKlijentu.println("Uspesno ste se prijavili.");
+								return true;
 							}
-						izlazniTokKaKlijentu.println("Uspesno ste se prijavili.");
-						break;
-					}else
-						izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.");
+					}
 				}
-					
+			}else {
+				izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.");
+				return false;
 			}
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return false;
 		
 		
 	}
@@ -303,7 +311,7 @@ public class ServerNit extends Thread {
 				break;
 			case "c":
 				registracija();
-				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nd - prijava\n e - prikazi listu kalkulacija");
+				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nd - prijava\ne - prikazi listu kalkulacija");
 				switch (ulazniTokOdKlijenta.readLine()) {
 				case "a":
 					izracunaj();
@@ -312,8 +320,8 @@ public class ServerNit extends Thread {
 					izadji();
 					break;
 				case "d":
-					prijava();
-					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz");
+					if (prijava()) {
+					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\ne - prikazi listu kalkulacija");
 					switch (ulazniTokOdKlijenta.readLine()) {
 					case "a":
 						izracunaj();
@@ -321,9 +329,26 @@ public class ServerNit extends Thread {
 					case "b":
 						izadji();
 						break;
+					case "e":
+						prikaziListu();
+						break;
 					default:
 						System.out.println("Nepoznata opcija.");
 						break;
+					}
+					}else {
+						izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz");
+						switch (ulazniTokOdKlijenta.readLine()) {
+						case "a":
+							izracunaj3();
+							break;
+						case "b":
+							izadji();
+							break;
+						default:
+							System.out.println("Nepoznata opcija.");
+							break;
+						}
 					}
 					break;
 				case "e":
@@ -339,6 +364,7 @@ public class ServerNit extends Thread {
 				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz");
 				switch (ulazniTokOdKlijenta.readLine()) {
 				case "a":
+					
 					izracunaj();
 					break;
 				case "b":

@@ -1,4 +1,9 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
@@ -11,20 +16,21 @@ public class Server {
 		if (args.length>0)
 			port = Integer.parseInt(args[0]);
 		Socket klijentSoket = null;
-		try{
+		try {
 			ServerSocket serverSoket = new ServerSocket(port);
+			
 			while(true){
 				klijentSoket = serverSoket.accept();
-				Korisnik korisnik=new Korisnik();
 				for (int i = 0; i <=9; i++)
 					if(klijenti[i]==null){
-						klijenti[i]= new ServerNit(klijentSoket, klijenti, korisnik);
+						klijenti[i]= new ServerNit(klijentSoket, klijenti, "korisnici.txt");
 						klijenti[i].start();
 						break;
 					}
 			}
-		} catch(IOException e){
+		} catch(Exception e){
 			System.out.println(e);
 		}	
+		
 	}
 }

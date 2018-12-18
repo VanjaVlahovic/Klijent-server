@@ -1,9 +1,8 @@
-import java.util.LinkedList;
 
 public class Korisnik {
 	private String ime;
 	private String sifra;
-	private LinkedList<String> kalkulacije = new LinkedList<>();
+	private String kalkulacije;
 	
 	public String getIme() {
 		return ime;
@@ -34,12 +33,26 @@ public class Korisnik {
 		if (velikoSlovo && cifra)
 			this.sifra = sifra;
 	}
-	public LinkedList<String> getKalkulacije() {
+	
+	
+	public String getKalkulacije() {
 		return kalkulacije;
 	}
-	public void setKalkulacije(LinkedList<String> kalkulacije) {
+	public void setKalkulacije(String kalkulacije) {
 		this.kalkulacije = kalkulacije;
 	}
+	@Override
+	public String toString() {
+		return ime + ";" + sifra + "[" + kalkulacije + "]";
+	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Korisnik))
+			throw new RuntimeException("Morate uneti objekat klase Korisnik");
+		Korisnik k = (Korisnik)(obj);
+		if (sifra==k.getSifra()) return true;
+		else return false;
+	}
 	
 }

@@ -13,12 +13,12 @@ public class Korisnik {
 	public String getSifra() {
 		return sifra;
 	}
-	public void setSifra(String sifra) {
+	public boolean setSifra(String sifra) {
 		char x;
 		boolean velikoSlovo=false;
 		boolean cifra = false;
 		if (sifra.length()<8)
-			throw new RuntimeException("Sifra ne sme imati manje od 8 karaktera");
+			return false;
 		for (int i = 0; i < sifra.length(); i++) {
 			x = sifra.charAt(i);
 			if (Character.isUpperCase(x))
@@ -27,13 +27,15 @@ public class Korisnik {
 				cifra=true;
 		}
 		if (!velikoSlovo)
-			throw new RuntimeException("Sifra mora imati bar jedno veliko slovo");
+			return false;
 		if (!cifra)
-			throw new RuntimeException("Sifra mora imati bar jednu cifru");
-		if (velikoSlovo && cifra)
+			return false;
+		if (velikoSlovo && cifra){
 			this.sifra = sifra;
+			return true;
+		}
+		return false;
 	}
-	
 	
 	public String getKalkulacije() {
 		return kalkulacije;

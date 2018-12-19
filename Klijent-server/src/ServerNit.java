@@ -1,11 +1,9 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.LinkedList;
 
@@ -14,7 +12,6 @@ public class ServerNit extends Thread {
 	BufferedReader ulazniTokOdKlijenta=null;
 	PrintStream izlazniTokKaKlijentu = null;
 	Socket soketZaKom=null;
-	LinkedList<String > imena = new LinkedList<>();
 	LinkedList<Korisnik> listaRegistrovanihKorisnika= new LinkedList<>();
 	ServerNit[] klijenti;
 	String fajl;
@@ -29,8 +26,9 @@ public class ServerNit extends Thread {
 		try {
 			BufferedReader in = new BufferedReader(new FileReader(fajl));
 			boolean kraj = false;
+			String pom = in.readLine();
 			while(!kraj){
-				String pom = in.readLine();
+				pom=in.readLine();
 				if(pom==null) kraj=true;
 				else{
 					Korisnik k = new Korisnik();
@@ -41,6 +39,13 @@ public class ServerNit extends Thread {
 					k.setSifra(sifra);
 					k.setKalkulacije(kalkulacije);
 					if (!listaRegistrovanihKorisnika.contains(k)) listaRegistrovanihKorisnika.add(k);
+					else{
+						for (int i = 0; i < listaRegistrovanihKorisnika.size(); i++) {
+							if(listaRegistrovanihKorisnika.get(i).equals(k)){
+								listaRegistrovanihKorisnika.get(i).setKalkulacije(listaRegistrovanihKorisnika.get(i).getKalkulacije()+" "+k.getKalkulacije());
+							}
+						}
+					}
 				}
 			}
 			in.close();
@@ -48,24 +53,31 @@ public class ServerNit extends Thread {
 			System.err.println("Nema fajla ili nesto drugo");
 		}
 	}
-	public void upisiUfajl(Korisnik k){
+	public void upisiUfajl(Korisnik k, String novaK){
 		try {
+			 FileWriter fw = new FileWriter(fajl,true); //the true will append the new data
+			 Korisnik pom = k;
+			 pom.setKalkulacije(novaK);
+			 String s=pom.toString();
 			
-			PrintWriter out =new PrintWriter(new BufferedWriter(new FileWriter(fajl)));
-			String s=k.toString();
-			BufferedReader in = new BufferedReader(new FileReader(fajl));
-			boolean kraj = false;
-			while(!kraj){
-				String pom = in.readLine();
-				if(pom==null){
-					out.println(s);
-					kraj=true;
-				}else{
-					out.println(pom);
-				}
-			}
-			in.close();
-			out.close();
+			 fw.write("\n"+s);
+			 fw.close();
+		
+			
+			}catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public void upisiUfajlNovogKorisnika(Korisnik k){
+		try {
+			 FileWriter fw = new FileWriter(fajl,true);
+			 String s=k.toString();
+			
+			 fw.write("\n"+s);
+			 fw.close();
+		
+			
 			}catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -73,9 +85,69 @@ public class ServerNit extends Thread {
 	}
 	
 	public void prikaziListu(String sifra) {
+		ucitajIzfajla();
 		for(int i=0; i<listaRegistrovanihKorisnika.size(); i++)
 			if(listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra))
 					izlazniTokKaKlijentu.println(listaRegistrovanihKorisnika.get(i).getKalkulacije());
+	}
+	
+	public String kalkulacije (String linija){
+		
+		String rez="nepoznat, mozda je greska u pisanju izraza.";
+		int rezultat=0;
+		if (linija.contains("+")){
+			int t=linija.indexOf('+');
+			String a1 = linija.substring(0, t);
+			String b1 = linija.substring(t+1);
+			try {
+				int a=Integer.parseInt(a1);
+				int b=Integer.parseInt(b1);
+				rezultat = a+b;
+				rez=(""+rezultat);
+			} catch (NumberFormatException e) {
+				return rez;
+			}
+		}
+		if (linija.contains("/")){
+			int t=linija.indexOf('/');
+			String a1 = linija.substring(0, t);
+			String b1 = linija.substring(t+1);
+			try {
+				int a=Integer.parseInt(a1);
+				int b=Integer.parseInt(b1);
+				rezultat = a/b;
+				rez=(""+rezultat);
+			} catch (NumberFormatException e) {
+				return rez;
+			}
+		}
+		if (linija.contains("-")){
+			int t=linija.indexOf('-');
+			String a1 = linija.substring(0, t);
+			String b1 = linija.substring(t+1);
+			try {
+				int a=Integer.parseInt(a1);
+				int b=Integer.parseInt(b1);
+				rezultat = a-b;
+				rez=(""+rezultat);
+			} catch (NumberFormatException e) {
+				return rez;
+			}
+		}
+		if (linija.contains("*")){
+			int t=linija.indexOf('*');
+			String a1 = linija.substring(0, t);
+			String b1 = linija.substring(t+1);
+			try {
+				int a=Integer.parseInt(a1);
+				int b=Integer.parseInt(b1);
+				rezultat = a*b;
+				rez=(""+rezultat);
+			} catch (NumberFormatException e) {
+				return rez;
+			}
+		}
+		return rez;
 	}
 	
 	public void izracunaj( String sifra) {
@@ -94,78 +166,23 @@ public class ServerNit extends Thread {
 					soketZaKom.close();
 					break;
 				}
-				
-						String rez="nepoznat, mozda je greska u pisanju izraza.";
-						int rezultat=0;
-						if (linija.contains("+")){
-							int t=linija.indexOf('+');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a+b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("/")){
-							int t=linija.indexOf('/');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a/b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("-")){
-							int t=linija.indexOf('-');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a-b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("*")){
-							int t=linija.indexOf('*');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a*b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						izlazniTokKaKlijentu.println("Rezultat: "+rez);
-					for (int i = 0; i < listaRegistrovanihKorisnika.size(); i++) {
-						if (listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra)){
-							listaRegistrovanihKorisnika.get(i).setKalkulacije(listaRegistrovanihKorisnika.get(i).getKalkulacije()+" "+linija+"="+rezultat);
-							upisiUfajl(listaRegistrovanihKorisnika.get(i));
-						}
-						
+				String rez = kalkulacije(linija);
+				while(rez.equals("nepoznat, mozda je greska u pisanju izraza.")){
+					izlazniTokKaKlijentu.println("Unesite zeljeni izraz:");
+					linija=ulazniTokOdKlijenta.readLine();
+					rez=kalkulacije(linija);
+				}
+				izlazniTokKaKlijentu.println("Rezultat: "+rez);
+				for (int i = 0; i < listaRegistrovanihKorisnika.size(); i++) {
+					if (listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra)){
+						listaRegistrovanihKorisnika.get(i).setKalkulacije(listaRegistrovanihKorisnika.get(i).getKalkulacije()+" "+linija+"="+rez);
+						izlazniTokKaKlijentu.println("ubacili smo kalkulaciju");
+						upisiUfajl(listaRegistrovanihKorisnika.get(i), linija+"="+rez);
 					}
 					
-				
+				}
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				System.err.println("Greskica");
 			}
 		}
 	}
@@ -177,81 +194,31 @@ public class ServerNit extends Thread {
 		int k=0;
 		while(k<3){
 			try {
-				
 				linija=ulazniTokOdKlijenta.readLine();
 				if (linija.equals("b")) {
-					izlazniTokKaKlijentu.println("*** Zatvara se konekcija za Vas ***");
-					soketZaKom.close();
-					break;
+					izadji();
+					return;
 				}
-						String rez="nepoznat, mozda je greska u pisanju izraza.";
-						int rezultat=0;
-						if (linija.contains("+")){
-							int t=linija.indexOf('+');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a+b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("/")){
-							int t=linija.indexOf('/');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a/b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("-")){
-							int t=linija.indexOf('-');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a-b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						if (linija.contains("*")){
-							int t=linija.indexOf('*');
-							String a1 = linija.substring(0, t);
-							String b1 = linija.substring(t+1);
-							try {
-								int a=Integer.parseInt(a1);
-								int b=Integer.parseInt(b1);
-								rezultat = a*b;
-								rez=(""+rezultat);
-							} catch (NumberFormatException e) {
-								System.err.println("Niste ispravno uneli izraz!");
-								break;
-							}
-						}
-						izlazniTokKaKlijentu.println("Rezultat: "+rez);
-						k++;
-						izlazniTokKaKlijentu.println("Ostalo vam je jos: "+(3-k)+" kalkulacija");
-						if (k==3) {
-							izlazniTokKaKlijentu.println("Nemate pravo na vise kalkulacija.");
-							izadji();
+				String rez = kalkulacije(linija);
+				while(rez.equals("nepoznat, mozda je greska u pisanju izraza.")){
+					izlazniTokKaKlijentu.println("Pogresno unet izraz!!! Pokusajte ponovo...");
+					izlazniTokKaKlijentu.println("Unesite zeljeni izraz:");
+					linija=ulazniTokOdKlijenta.readLine();
+					if (linija.equals("b")) {
+						izadji();
+						return;
+					}
+					rez=kalkulacije(linija);
+				}
+				izlazniTokKaKlijentu.println("Rezultat: "+rez);
+				k++;
+				izlazniTokKaKlijentu.println("Ostalo vam je jos: "+(3-k)+" kalkulacija");
+				if (k==3) {
+				izlazniTokKaKlijentu.println("Nemate pravo na vise kalkulacija.");
+				izadji();
 						}
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				System.err.println("ulazni tok nije obradjen");
 			}
 		}
 		
@@ -262,37 +229,46 @@ public class ServerNit extends Thread {
 		try {
 			soketZaKom.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 	}
 	
 	public void registracija() {
+		ucitajIzfajla();
 		String ime;
 		String sifra;
 		izlazniTokKaKlijentu.println("Unesite jedinstveno korisnicko ime.");
 		try {
 			int postoji=0;
-			ime=ulazniTokOdKlijenta.readLine();
+			boolean jedinstveno = false;
 			Korisnik k = new Korisnik(); 
-			for(int i=0; i<listaRegistrovanihKorisnika.size(); i++){
-				if (listaRegistrovanihKorisnika.get(i).equals(ime)){
-					postoji++;
-				}else{
-					izlazniTokKaKlijentu.println("Korisnicko ime vec postoji.");
-					return;
+			while(jedinstveno==false){
+				ime=ulazniTokOdKlijenta.readLine(); 
+				for(int i=0; i<listaRegistrovanihKorisnika.size(); i++){
+					if (listaRegistrovanihKorisnika.get(i).getIme().equals(ime)){
+						postoji++;
+					}
 				}
-			}
-			if (postoji==0){
-				k.setIme(ime);
+				if (postoji==0){
+					k.setIme(ime);
+					jedinstveno=true;
+				}else{
+					izlazniTokKaKlijentu.println("Korisnicko ime vec postoji. Unesite neko drugo");
+					postoji=0;
+				}
 			}
 			izlazniTokKaKlijentu.println("Unesite sifru. \n[Sifra mora imati minimum 8 karaktera, minimum jedno veliko slovo (A-Z) i minimum jednu cifru (0-9)]");
 			sifra=ulazniTokOdKlijenta.readLine();
-			k.setSifra(sifra);
+			
+			while(k.setSifra(sifra)==false){
+				izlazniTokKaKlijentu.println("niste ispunili zahteve sifre. Molimo Vas unesite neku drugu sifru");
+				sifra=ulazniTokOdKlijenta.readLine();
+			}
+			
 			izlazniTokKaKlijentu.println("Uspesno ste se registrovali.");
 			listaRegistrovanihKorisnika.add(k);
-			upisiUfajl(k);
+			upisiUfajlNovogKorisnika(k);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -303,8 +279,11 @@ public class ServerNit extends Thread {
 		String ime;
 		String sifra;
 		ucitajIzfajla();
+		boolean uspesnoIme=false;
+		boolean uspesnaSifra=false;
 		izlazniTokKaKlijentu.println("Unesite korisnicko ime");
 		try {
+			while(uspesnoIme==false){
 			ime=ulazniTokOdKlijenta.readLine();
 			int postoji=0;
 			for(int i=0; i<listaRegistrovanihKorisnika.size(); i++){
@@ -312,20 +291,25 @@ public class ServerNit extends Thread {
 					postoji++;
 				}
 			}
-			if(postoji>0) {
+			if(postoji==1) {
+				uspesnoIme=true;
 				izlazniTokKaKlijentu.println("Unesite sifru.");
-				sifra=ulazniTokOdKlijenta.readLine();
-				int brojKorisnika=listaRegistrovanihKorisnika.size();
-				for(int i=0; i<brojKorisnika; i++) {
-					if(listaRegistrovanihKorisnika.get(i).getIme().equals(ime) &&
-							listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra)) {	
-								izlazniTokKaKlijentu.println("Uspesno ste se prijavili.");
-								return sifra;
-							}
+				while(uspesnaSifra==false){
+					sifra=ulazniTokOdKlijenta.readLine();
+					int brojKorisnika=listaRegistrovanihKorisnika.size();
+					for(int i=0; i<brojKorisnika; i++) {
+						if(listaRegistrovanihKorisnika.get(i).getIme().equals(ime) &&
+								listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra)) {	
+									izlazniTokKaKlijentu.println("Uspesno ste se prijavili.");
+									uspesnaSifra=true;
+									return sifra;
+						}
 					}
+					izlazniTokKaKlijentu.println("Uneli ste pogresnu sifru. Pokusajte ponovo...");
+				}
 			}else {
-				izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.");
-				return "bezuspesno";
+				izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.Pokusajte ponovo.");
+			}
 			}
 			
 		} catch (IOException e) {
@@ -333,8 +317,6 @@ public class ServerNit extends Thread {
 			e.printStackTrace();
 		}
 		return "bezuspesno";
-		
-		
 	}	
 	
 	public void run(){
@@ -403,6 +385,8 @@ public class ServerNit extends Thread {
 				break;
 			case "d":
 				String s = prijava();
+				if(s.equals("bezuspesno"))
+					izlazniTokKaKlijentu.println("Neuspesno prijavljivanje");
 				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nc - rikaz kalkulacija");
 				switch (ulazniTokOdKlijenta.readLine()) {
 				case "a":

@@ -38,11 +38,21 @@ public class ServerNit extends Thread {
 					k.setIme(ime);
 					k.setSifra(sifra);
 					k.setKalkulacije(kalkulacije);
-					if (!listaRegistrovanihKorisnika.contains(k)) listaRegistrovanihKorisnika.add(k);
+					int postoji=0;
+					for (int i = 0; i < listaRegistrovanihKorisnika.size(); i++)
+						if (listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra))
+							postoji++;
+					if(kalkulacije.equals("null") && postoji==0) listaRegistrovanihKorisnika.add(k);
 					else{
+						if (!kalkulacije.equals("null"))
 						for (int i = 0; i < listaRegistrovanihKorisnika.size(); i++) {
-							if(listaRegistrovanihKorisnika.get(i).equals(k)){
-								listaRegistrovanihKorisnika.get(i).setKalkulacije(listaRegistrovanihKorisnika.get(i).getKalkulacije()+" "+k.getKalkulacije());
+							if (listaRegistrovanihKorisnika.get(i).getSifra().equals(k.getSifra())){
+								if(listaRegistrovanihKorisnika.get(i).getKalkulacije().equals("null"))
+									listaRegistrovanihKorisnika.get(i).setKalkulacije(kalkulacije);
+								else
+									if(!listaRegistrovanihKorisnika.get(i).getKalkulacije().contains(kalkulacije)){
+										listaRegistrovanihKorisnika.get(i).setKalkulacije(listaRegistrovanihKorisnika.get(i).getKalkulacije()+" "+kalkulacije);
+									}
 							}
 						}
 					}
@@ -50,12 +60,12 @@ public class ServerNit extends Thread {
 			}
 			in.close();
 		} catch (Exception e) {
-			System.err.println("Nema fajla ili nesto drugo");
+			System.err.println("Nema fajla");
 		}
 	}
 	public void upisiUfajl(Korisnik k, String novaK){
 		try {
-			 FileWriter fw = new FileWriter(fajl,true); //the true will append the new data
+			 FileWriter fw = new FileWriter(fajl,true);
 			 Korisnik pom = k;
 			 pom.setKalkulacije(novaK);
 			 String s=pom.toString();
@@ -83,14 +93,12 @@ public class ServerNit extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
 	public void prikaziListu(String sifra) {
 		ucitajIzfajla();
 		for(int i=0; i<listaRegistrovanihKorisnika.size(); i++)
 			if(listaRegistrovanihKorisnika.get(i).getSifra().equals(sifra))
 					izlazniTokKaKlijentu.println(listaRegistrovanihKorisnika.get(i).getKalkulacije());
 	}
-	
 	public String kalkulacije (String linija){
 		
 		String rez="nepoznat, mozda je greska u pisanju izraza.";
@@ -149,7 +157,6 @@ public class ServerNit extends Thread {
 		}
 		return rez;
 	}
-	
 	public void izracunaj( String sifra) {
 		String linija;
 		izlazniTokKaKlijentu.println("Unesite zeljeni izraz: \n[Za prekid komunikacije mozete pritisnuti b\n za prikaz liste e] ");
@@ -170,6 +177,10 @@ public class ServerNit extends Thread {
 				while(rez.equals("nepoznat, mozda je greska u pisanju izraza.")){
 					izlazniTokKaKlijentu.println("Unesite zeljeni izraz:");
 					linija=ulazniTokOdKlijenta.readLine();
+					if (linija.equals("b")){
+						izadji();
+						return;
+					}
 					rez=kalkulacije(linija);
 				}
 				izlazniTokKaKlijentu.println("Rezultat: "+rez);
@@ -182,11 +193,10 @@ public class ServerNit extends Thread {
 					
 				}
 			} catch (IOException e1) {
-				System.err.println("Greskica");
+				System.err.println("Nije unet odgovarajuci izraz");
 			}
 		}
 	}
-	
 	public void izracunaj3() {
 		String linija;
 		izlazniTokKaKlijentu.println("Posto niste registrovani korisnik imate pravo samo na tri kalkulacije:");
@@ -223,9 +233,8 @@ public class ServerNit extends Thread {
 		}
 		
 	}
-
 	public void izadji() {
-		izlazniTokKaKlijentu.println("*** Zatvara se konekcija za Vas ***");
+		izlazniTokKaKlijentu.println("***Zatvara se konekcija za Vas ***");
 		try {
 			soketZaKom.close();
 		} catch (IOException e) {
@@ -233,7 +242,6 @@ public class ServerNit extends Thread {
 		}
 
 	}
-	
 	public void registracija() {
 		ucitajIzfajla();
 		String ime;
@@ -274,17 +282,17 @@ public class ServerNit extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
 	public String prijava() {
 		String ime;
 		String sifra;
 		ucitajIzfajla();
+		boolean nazad = false;
 		boolean uspesnoIme=false;
 		boolean uspesnaSifra=false;
 		izlazniTokKaKlijentu.println("Unesite korisnicko ime");
 		try {
-			while(uspesnoIme==false){
 			ime=ulazniTokOdKlijenta.readLine();
+			while(uspesnoIme==false && nazad==false){
 			int postoji=0;
 			for(int i=0; i<listaRegistrovanihKorisnika.size(); i++){
 				if (listaRegistrovanihKorisnika.get(i).getIme().equals(ime)){
@@ -294,8 +302,8 @@ public class ServerNit extends Thread {
 			if(postoji==1) {
 				uspesnoIme=true;
 				izlazniTokKaKlijentu.println("Unesite sifru.");
+				sifra=ulazniTokOdKlijenta.readLine();
 				while(uspesnaSifra==false){
-					sifra=ulazniTokOdKlijenta.readLine();
 					int brojKorisnika=listaRegistrovanihKorisnika.size();
 					for(int i=0; i<brojKorisnika; i++) {
 						if(listaRegistrovanihKorisnika.get(i).getIme().equals(ime) &&
@@ -305,10 +313,17 @@ public class ServerNit extends Thread {
 									return sifra;
 						}
 					}
-					izlazniTokKaKlijentu.println("Uneli ste pogresnu sifru. Pokusajte ponovo...");
+					izlazniTokKaKlijentu.println("Uneli ste pogresnu sifru. Pokusajte ponovo...Ili ako zelite da izadjete iz prijave pritisnite b");
+					sifra = ulazniTokOdKlijenta.readLine();
+					if (sifra.equals("b"))
+						return "bezuspesno";
 				}
 			}else {
-				izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.Pokusajte ponovo.");
+				izlazniTokKaKlijentu.println("Ne postojite u listi registrovanih korisnika.Pokusajte ponovo. Ako zelite da napustite proces prijavljivanja pritisnite b");
+				ime=ulazniTokOdKlijenta.readLine();
+				if (ime.equals("b")){
+					return "bezuspesno";
+				}
 			}
 			}
 			
@@ -337,7 +352,7 @@ public class ServerNit extends Thread {
 				break;
 			case "c":
 				registracija();
-				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator - 3 kalkulacije (Ako zelite vise kalkulacija, prijavite se) \nb - izlaz\nd - prijava\ne - prikazi listu kalkulacija");
+				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator - 3 kalkulacije (Ako zelite vise kalkulacija, prijavite se) \nb - izlaz\nd - prijava");
 				switch (ulazniTokOdKlijenta.readLine()) {
 				case "a":
 					izracunaj3();
@@ -348,7 +363,7 @@ public class ServerNit extends Thread {
 				case "d":
 					String s = prijava();
 					if (!s.equals("bezuspesno")) {
-					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\ne - prikazi listu kalkulacija");
+					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\ne - prikaz kalkulacija");
 					switch (ulazniTokOdKlijenta.readLine()) {
 					case "a":
 						izracunaj(s);
@@ -358,13 +373,16 @@ public class ServerNit extends Thread {
 						break;
 					case "e":
 						prikaziListu(s);
+						izracunaj(s);
 						break;
 					default:
-						System.out.println("Nepoznata opcija.");
+						izlazniTokKaKlijentu.println("Nepoznata opcija");
+						izadji();
 						break;
 					}
 					}else {
-						izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz");
+						izlazniTokKaKlijentu.println("Niste se uspesno prijavili");
+						izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator (3 kalkulacije) \nb - izlaz");
 						switch (ulazniTokOdKlijenta.readLine()) {
 						case "a":
 							izracunaj3();
@@ -373,43 +391,64 @@ public class ServerNit extends Thread {
 							izadji();
 							break;
 						default:
-							System.out.println("Nepoznata opcija.");
+							izlazniTokKaKlijentu.println("Nepoznata opcija");
+							izadji();
 							break;
 						}
 					}
 					break;
 				default:
-					System.out.println("Nepoznata opcija.");
+					izlazniTokKaKlijentu.println("Nepoznata opcija");
+					izadji();
 					break;
 				}
 				break;
 			case "d":
 				String s = prijava();
-				if(s.equals("bezuspesno"))
+				
+				if(s.equals("bezuspesno")){
 					izlazniTokKaKlijentu.println("Neuspesno prijavljivanje");
-				izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\nc - rikaz kalkulacija");
-				switch (ulazniTokOdKlijenta.readLine()) {
-				case "a":
-					izracunaj(s);
-					break;
-				case "b":
-					izadji();
-					break;
-				case "c":
-					prikaziListu(s);
-					break;
-				default:
-					System.out.println("Nepoznata opcija.");
-					break;
+					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator (3 kalkulacije) \nb - izlaz");
+					switch (ulazniTokOdKlijenta.readLine()) {
+					case "a":
+						izracunaj3();
+						break;
+					case "b":
+						izadji();
+						break;
+					default:
+						izlazniTokKaKlijentu.println("Nepoznata opcija");
+						izadji();
+						break;
+					}
+				}else{
+					izlazniTokKaKlijentu.println("Izaberite jednu od ponudjenih opcija: \na - kalkulator \nb - izlaz\ne - prikaz kalkulacija");
+					switch (ulazniTokOdKlijenta.readLine()) {
+					case "a":
+						izracunaj(s);
+						break;
+					case "b":
+						izadji();
+						break;
+					case "e":
+						prikaziListu(s);
+						izracunaj(s);
+						break;
+					default:
+						izlazniTokKaKlijentu.println("Nepoznata opcija");
+						izadji();
+						break;
+				}
 				}
 				break;
 			default:
-				System.out.println("Nepoznata opcija.");
+				izlazniTokKaKlijentu.println("Nepoznata opcija");
+				izadji();
 				break;
 			}
 			
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			System.err.println("Nagli prekid komunikacije, bez izlaska!");
 		}
 		for (int i = 0; i <=9; i++)
 			if(klijenti[i]==this)
